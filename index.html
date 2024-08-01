@@ -1,0 +1,190 @@
+<html><head><base href="https://www.simverse.ai/simple-linear-regression/" target="_blank">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Linear Regression Web App</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+  }
+  .sidebar {
+    width: 250px;
+    background-color: #252526;
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+  }
+  .main-content {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  h1 {
+    color: #61dafb;
+    margin-top: 0;
+    font-size: 1.5em;
+  }
+  .input-group {
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    margin-bottom: 5px;
+    color: #61dafb;
+  }
+  input[type="range"] {
+    width: 100%;
+    background: #3a3a3a;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+  }
+  input[type="range"]:hover {
+    opacity: 1;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #61dafb;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #61dafb;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+  .value-display {
+    font-size: 0.9em;
+    color: #bbb;
+  }
+  #plot {
+    width: 100%;
+    height: calc(100vh - 40px);
+  }
+</style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>Simple Linear Regression Web App</h1>
+    <div class="input-group">
+      <label for="slope">Slope (a):</label>
+      <input type="range" id="slope" min="-5" max="5" step="0.1" value="1">
+      <span id="slopeValue" class="value-display">1</span>
+    </div>
+    <div class="input-group">
+      <label for="intercept">Intercept (b):</label>
+      <input type="range" id="intercept" min="-10" max="10" step="0.1" value="0">
+      <span id="interceptValue" class="value-display">0</span>
+    </div>
+    <div class="input-group">
+      <label for="noise">Noise factor (c):</label>
+      <input type="range" id="noise" min="0" max="5" step="0.1" value="2">
+      <span id="noiseValue" class="value-display">2</span>
+    </div>
+    <div class="input-group">
+      <label for="numPoints">Number of points (n):</label>
+      <input type="range" id="numPoints" min="10" max="1000" step="10" value="500">
+      <span id="numPointsValue" class="value-display">500</span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div id="plot"></div>
+  </div>
+
+  <script>
+    function updateValue(id) {
+      const value = document.getElementById(id).value;
+      document.getElementById(id + 'Value').textContent = value;
+    }
+
+    function generateData() {
+      const n = parseInt(document.getElementById('numPoints').value);
+      const a = parseFloat(document.getElementById('slope').value);
+      const b = parseFloat(document.getElementById('intercept').value);
+      const c = parseFloat(document.getElementById('noise').value);
+
+      const xValues = [];
+      const yValues = [];
+
+      for (let i = 0; i < n; i++) {
+        const x = math.random(-10, 10);
+        const u1 = math.random();
+        const u2 = math.random();
+        const noise = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        const y = a * x + b + c * noise;
+        
+        xValues.push(x);
+        yValues.push(y);
+      }
+
+      return { x: xValues, y: yValues };
+    }
+
+    function plotData() {
+      const { x, y } = generateData();
+      const a = parseFloat(document.getElementById('slope').value);
+      const b = parseFloat(document.getElementById('intercept').value);
+
+      const trace1 = {
+        x: x,
+        y: y,
+        mode: 'markers',
+        type: 'scatter',
+        name: 'Data Points',
+        marker: { color: '#61dafb', size: 6, symbol: 'star' }
+      };
+
+      const xRange = [-10, 10];
+      const yTrue = xRange.map(x => a * x + b);
+
+      const trace2 = {
+        x: xRange,
+        y: yTrue,
+        mode: 'lines',
+        type: 'scatter',
+        name: 'Regression Line',
+        line: { color: '#ff6b6b', width: 3 }
+      };
+
+      const layout = {
+        title: 'Sparkling Linear Regression',
+        xaxis: { title: 'X', range: [-10, 10], gridcolor: '#444' },
+        yaxis: { title: 'Y', gridcolor: '#444' },
+        legend: { x: 0, y: 1 },
+        hovermode: 'closest',
+        plot_bgcolor: '#333',
+        paper_bgcolor: '#333',
+        font: { color: '#e0e0e0' }
+      };
+
+      Plotly.newPlot('plot', [trace1, trace2], layout, {responsive: true});
+    }
+
+    // Initialize plot and add event listeners
+    plotData();
+    ['slope', 'intercept', 'noise', 'numPoints'].forEach(id => {
+      const element = document.getElementById(id);
+      element.addEventListener('input', () => {
+        updateValue(id);
+        plotData();
+      });
+    });
+
+    // Add responsiveness
+    window.addEventListener('resize', () => {
+      Plotly.Plots.resize('plot');
+    });
+  </script>
+</body>
+</html>
